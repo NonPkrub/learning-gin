@@ -18,15 +18,18 @@ var photos []models.Photo
 func (p *Photo) FindAll(ctx *gin.Context) {
 	limit, _ := strconv.Atoi(ctx.DefaultQuery("limit", "10"))
 
+	if limit == 0 {
+		ctx.JSON(200, photos)
+	}
 	ctx.JSON(200, photos[:limit])
 
 }
 
 func (p *Photo) FindOne(ctx *gin.Context) {
-	id, _ := strconv.Atoi(ctx.Param("id"))
+	id, _ := getID(ctx)
 
 	for _, p := range photos {
-		if p.ID == uint(id) {
+		if p.ID == id {
 			ctx.JSON(200, p)
 			return
 		}
@@ -73,10 +76,10 @@ func (p *Photo) Update(ctx *gin.Context) {
 		ctx.JSON(400, gin.H{"error": err.Error()})
 		return
 	}
-	id, _ := strconv.Atoi(ctx.Param("id"))
+	id, _ := getID(ctx)
 
 	for index, p := range photos {
-		if p.ID == uint(id) {
+		if p.ID == id {
 			target := photos[index]
 
 			if form.Name != "" {
@@ -97,9 +100,9 @@ func (p *Photo) Update(ctx *gin.Context) {
 				}
 				pwd, _ := os.Getwd()
 				os.Remove(pwd + "/" + oldFile)
+				target.Image = path
 			}
 
-			photos[index] = target
 			ctx.JSON(200, target)
 			return
 		}
@@ -108,5 +111,20 @@ func (p *Photo) Update(ctx *gin.Context) {
 }
 
 func (p *Photo) Delete(ctx *gin.Context) {
+	id, _ := getID(ctx)
 
+	var i int
+	for index, p := range photos {
+		if p.ID == id {
+			//target := photos[index]
+			// pwd, _ := os.Getwd()
+			// os.Remove(pwd + "/" + target.Image)
+			i = index
+			photos = append(photos[:i], photos[i+1:]...)
+			ctx.Status(204)
+			return
+		}
+
+	}
+	ctx.JSON(404, gin.H{"error": "photo not found"})
 }
